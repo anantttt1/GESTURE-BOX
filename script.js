@@ -281,6 +281,27 @@ async function startCamera() {
 
 
     requestAnimationFrame(mainLoop);
+
+    // Watchdog: on a cold load MediaPipe sometimes never returns a frame.
+    // If nothing arrives in 7s, reload once automatically (cached files make it work).
+    setTimeout(function() {
+
+        if (gotFirstResult) { return; }
+
+        let tried = "0";
+        try { tried = sessionStorage.getItem("hgxReload") || "0"; } catch (e) {}
+
+        if (tried === "0") {
+            try { sessionStorage.setItem("hgxReload", "1"); } catch (e) {}
+            location.reload();
+        } else {
+            showStageError(
+                "NO TRACKING DATA",
+                "Reload the page once. If it persists, check internet / ad-blocker."
+            );
+        }
+
+    }, 7000);
 }
 
 
@@ -387,7 +408,11 @@ function updateFPS() {
    MEDIAPIPE RESULTS
 ========================================================= */
 
+let gotFirstResult = false;
+
 function onResults(results) {
+
+    gotFirstResult = true;
 
     const landmarks =
         results.multiHandLandmarks &&
