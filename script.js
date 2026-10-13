@@ -116,7 +116,7 @@ const hands = new Hands({
     locateFile: function(file) {
 
         return (
-            "https://cdn.jsdelivr.net/npm/@mediapipe/hands/" +
+            "https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/" +
             file
         );
     }
@@ -144,7 +144,51 @@ hands.onResults(onResults);
    CAMERA
 ========================================================= */
 
+function showStageError(title, sub) {
+
+    if (!stageMessage) { return; }
+
+    stageMessage.classList.remove("hidden");
+
+    const t = stageMessage.querySelector(".msg-title");
+    const u = stageMessage.querySelector(".msg-sub");
+
+    if (t) { t.textContent = title; }
+    if (u) { u.textContent = sub; }
+}
+
 async function startCamera() {
+
+    if (typeof Hands === "undefined") {
+
+        showStageError(
+            "HAND MODEL NOT LOADED",
+            "MediaPipe script blocked. Disable ad-blocker / check internet, then reload."
+        );
+
+        return;
+    }
+
+    showStageError(
+        "LOADING HAND MODEL",
+        "Downloading MediaPipe files (first load takes a few seconds)..."
+    );
+
+    try {
+
+        await hands.initialize();
+
+    } catch (error) {
+
+        console.error("MediaPipe init failed:", error);
+
+        showStageError(
+            "HAND MODEL FAILED TO LOAD",
+            "Could not download model files from CDN. Check internet / ad-blocker and reload."
+        );
+
+        return;
+    }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
 
@@ -293,6 +337,11 @@ async function sendFrame() {
         console.error(
             "MediaPipe Error:",
             error
+        );
+
+        showStageError(
+            "TRACKING ERROR",
+            String(error && error.message ? error.message : error)
         );
 
     } finally {
